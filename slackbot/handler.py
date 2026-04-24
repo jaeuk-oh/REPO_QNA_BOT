@@ -6,7 +6,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 import config
 from config import RepoConfig
-from agent import retrieve, answer, to_blocks, to_fallback_text
+from agent import retrieve, answer, to_blocks, to_fallback_text, classify_intent, answer_general
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,17 @@ def build_app(repo: RepoConfig) -> App:
 
         if not question:
             say(text="질문을 함께 적어주세요.", thread_ts=thread_ts)
+            return
+
+        intent = classify_intent(question)
+
+        if intent == "general":
+            try:
+                reply = answer_general(question)
+                say(text=reply, thread_ts=thread_ts)
+            except Exception:
+                logger.exception("General answer failed for %s", repo.name)
+                say(text="죄송해요, 잠시 문제가 생겼어요.", thread_ts=thread_ts)
             return
 
         # Post placeholder immediately so Bolt ack is fast

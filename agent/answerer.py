@@ -9,6 +9,54 @@ logger = logging.getLogger(__name__)
 
 _openai = OpenAI(api_key=config.OPENAI_API_KEY)
 
+_INTENT_SYSTEM = (
+    "Classify the user's message as 'code' or 'general'.\n"
+    "'code' = questions about a specific codebase, feature, function, bug, or technical detail.\n"
+    "'general' = greetings, small talk, bot usage questions, or anything unrelated to code.\n"
+    "Reply with exactly one word: code or general."
+)
+
+_GENERAL_SYSTEM = (
+    "You are a helpful assistant embedded in a Slack workspace. "
+    "Respond naturally and concisely in Korean."
+)
+
+
+def classify_intent(question: str) -> str:
+    """Returns 'code' or 'general'."""
+    try:
+        resp = _openai.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0,
+            max_tokens=5,
+            messages=[
+                {"role": "system", "content": _INTENT_SYSTEM},
+                {"role": "user", "content": question},
+            ],
+        )
+        label = resp.choices[0].message.content.strip().lower()
+        return "code" if label == "code" else "general"
+    except Exception:
+        logger.exception("Intent classification failed; defaulting to 'code'")
+        return "code"
+
+
+def answer_general(question: str) -> str:
+    """Natural-language reply for non-code messages, no RAG."""
+    try:
+        resp = _openai.chat.completions.create(
+            model=config.CHAT_MODEL,
+            temperature=0.7,
+            messages=[
+                {"role": "system", "content": _GENERAL_SYSTEM},
+                {"role": "user", "content": question},
+            ],
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception:
+        logger.exception("General answer failed")
+        return "죄송해요, 잠시 문제가 생겼어요. 다시 시도해 주세요."
+
 _MAX_CONTEXT_CHARS = 12_000
 
 
