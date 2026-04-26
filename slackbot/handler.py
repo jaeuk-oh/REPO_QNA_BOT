@@ -26,52 +26,33 @@ def _process_mention(question: str, channel: str, thread_ts: str, client, repo: 
             thread_ts=thread_ts,
             text="생각 중... 🔍",
         )
+        placeholder_ts = placeholder["ts"]
     except Exception:
         logger.exception("Failed to post placeholder for %s", repo.name)
         return
 
-    intent = classify_intent(question)
-
-    if intent == "general":
-        try:
-            reply = answer_general(question)
-            client.chat_update(
-                channel=channel,
-                ts=placeholder["ts"],
-                text=reply,
-            )
-        except Exception:
-            logger.exception("General answer failed for %s", repo.name)
-            try:
-                client.chat_update(
-                    channel=channel,
-                    ts=placeholder["ts"],
-                    text="죄송해요, 잠시 문제가 생겼어요.",
-                )
-            except Exception:
-                pass
-        return
-
     try:
-        chunks = retrieve(
-            question,
-            repo.chroma_dir,
-            repo.collection_name,
-            config.TOP_K,
-        )
+        intent = classify_intent(question)
+
+        if intent == "general":
+            reply = answer_general(question)
+            client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
+            return
+
+        chunks = retrieve(question, repo.chroma_dir, repo.collection_name, config.TOP_K)
         ans = answer(question, chunks, repo.name)
         client.chat_update(
             channel=channel,
-            ts=placeholder["ts"],
+            ts=placeholder_ts,
             text=to_fallback_text(ans),
             blocks=to_blocks(ans),
         )
     except Exception as e:
-        logger.exception("Answer generation failed for %s", repo.name)
+        logger.exception("Processing failed for %s: %s", repo.name, type(e).__name__)
         try:
             client.chat_update(
                 channel=channel,
-                ts=placeholder["ts"],
+                ts=placeholder_ts,
                 text=f"답변 생성 실패: {type(e).__name__}",
             )
         except Exception:
