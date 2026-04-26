@@ -1,18 +1,8 @@
 import html
 from .answerer import StructuredAnswer
 
-_MAX_SNIPPET_LINES = 20
-
-
 def _escape(text: str) -> str:
     return html.escape(text, quote=False).replace("&amp;", "&")
-
-
-def _truncate_snippet(snippet: str) -> str:
-    lines = snippet.splitlines()
-    if len(lines) > _MAX_SNIPPET_LINES:
-        lines = lines[:_MAX_SNIPPET_LINES] + ["... [truncated]"]
-    return "\n".join(lines)
 
 
 def to_blocks(ans: StructuredAnswer) -> list[dict]:
@@ -58,16 +48,6 @@ def to_blocks(ans: StructuredAnswer) -> list[dict]:
             {"type": "mrkdwn", "text": f"신뢰도: *{confidence_pct}%*  |  파일: {refs}"},
         ],
     })
-
-    # Divider before snippets
-    if ans.snippets:
-        blocks.append({"type": "divider"})
-        for snippet in ans.snippets:
-            truncated = _truncate_snippet(snippet)
-            blocks.append({
-                "type": "section",
-                "text": {"type": "mrkdwn", "text": f"```{truncated}```"},
-            })
 
     return blocks
 
