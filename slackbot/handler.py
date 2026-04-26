@@ -7,7 +7,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 import config
 from config import RepoConfig
-from agent import retrieve, answer, to_blocks, to_fallback_text, classify_intent, answer_general
+from agent import retrieve, answer, answer_project, to_blocks, to_fallback_text, classify_intent, answer_general
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +34,19 @@ def _process_mention(question: str, channel: str, thread_ts: str, client, repo: 
     try:
         intent = classify_intent(question)
 
-        if intent == "general":
-            reply = answer_general(question)
+        if intent == "chat":
+            reply = answer_general(question, repo_name=repo.display_name, repo_url=repo.github_url)
             client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
             return
 
         chunks = retrieve(question, repo.chroma_dir, repo.collection_name, config.TOP_K)
-        ans = answer(question, chunks, repo.name)
+
+        if intent == "project":
+            reply = answer_project(question, chunks, repo.display_name, repo.github_url)
+            client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
+            return
+
+        ans = answer(question, chunks, repo.display_name)
         client.chat_update(
             channel=channel,
             ts=placeholder_ts,
