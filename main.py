@@ -45,16 +45,18 @@ def main() -> int:
     # Start background reindex scheduler
     sched = scheduler.start_scheduler(repos)
 
+    stop = threading.Event()
+
     def _shutdown(signum, frame):
         logger.info("Shutting down...")
         sched.shutdown(wait=False)
-        sys.exit(0)
+        stop.set()
 
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
     logger.info("All bots running. Press Ctrl+C to stop.")
-    signal.pause()
+    stop.wait()
     return 0
 
 
