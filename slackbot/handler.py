@@ -33,25 +33,28 @@ def _process_mention(question: str, channel: str, thread_ts: str, client, repo: 
 
     try:
         intent = classify_intent(question)
+        _LABEL = {"chat": "[일반]", "project": "[프로젝트]", "code": "[코드]"}
+        label = _LABEL.get(intent, "[코드]")
 
         if intent == "chat":
             reply = answer_general(question, repo_name=repo.display_name, repo_url=repo.github_url)
-            client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
+            client.chat_update(channel=channel, ts=placeholder_ts, text=f"{label} {reply}")
             return
 
         chunks = retrieve(question, repo.chroma_dir, repo.collection_name, config.TOP_K)
 
         if intent == "project":
             reply = answer_project(question, chunks, repo.display_name, repo.github_url)
-            client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
+            client.chat_update(channel=channel, ts=placeholder_ts, text=f"{label} {reply}")
             return
 
         ans = answer(question, chunks, repo.display_name)
+        blocks = [{"type": "context", "elements": [{"type": "mrkdwn", "text": label}]}] + to_blocks(ans)
         client.chat_update(
             channel=channel,
             ts=placeholder_ts,
-            text=to_fallback_text(ans),
-            blocks=to_blocks(ans),
+            text=f"{label} {to_fallback_text(ans)}",
+            blocks=blocks,
         )
     except Exception as e:
         logger.exception("Processing failed for %s: %s", repo.name, type(e).__name__)
