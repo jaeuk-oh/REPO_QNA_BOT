@@ -23,7 +23,7 @@ def _process_mention(question: str, channel: str, thread_ts: str, client, repo: 
     try:
         placeholder = client.chat_postMessage(
             channel=channel,
-            thread_ts=thread_ts,
+            # thread_ts=thread_ts,
             text="생각 중... 🔍",
         )
         placeholder_ts = placeholder["ts"]

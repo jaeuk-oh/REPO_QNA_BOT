@@ -13,7 +13,7 @@ META_PATH: Path = DATA_DIR / "meta.json"
 
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 EMBEDDING_MODEL: str = "text-embedding-3-small"
-CHAT_MODEL: str = "gpt-4o"
+CHAT_MODEL: str = "gpt-4o-mini" #성능 별로면 gpt-5o-mini
 
 CHUNK_SIZE: int = 1000
 CHUNK_OVERLAP: int = 200
@@ -48,6 +48,10 @@ class RepoConfig:
     @property
     def chroma_dir(self) -> Path:
         return CHROMA_DIR / self.name
+
+    @property
+    def display_name(self) -> str:
+        return self.github_url.rstrip("/").split("/")[-1]
 
     @property
     def collection_name(self) -> str:

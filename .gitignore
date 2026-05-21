@@ -12,3 +12,4 @@ data/meta.json
 dist/
 build/
 .pytest_cache/
+plan.md
