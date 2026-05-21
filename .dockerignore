@@ -1,0 +1,16 @@
+.env
+.git
+.gitignore
+.qna_venv/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+data/
+.omc/
+.DS_Store
+*.egg-info/
+dist/
+build/
+.pytest_cache/

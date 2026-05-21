@@ -1,0 +1,41 @@
+services:
+  - type: worker          # HTTP 서버 없음 — Socket Mode WebSocket 전용
+    name: qna-bot-inhouse
+    env: docker
+    plan: starter         # $7/month — Background Worker 지원하는 최소 플랜
+    region: singapore     # 한국과 가장 가까운 리전
+    dockerfilePath: ./Dockerfile
+
+    disk:
+      name: bot-data
+      mountPath: /app/data   # config.py의 DATA_DIR = PROJECT_ROOT / "data"
+      sizeGB: 5              # repos 3개 + ChromaDB 인덱스 → 5GB 충분
+
+    envVars:
+      # ── OpenAI ───────────────────────────────────────────
+      - key: OPENAI_API_KEY
+        sync: false   # Render 대시보드에서 직접 입력 (값을 git에 올리지 않음)
+
+      # ── REPO_A ───────────────────────────────────────────
+      - key: SLACK_BOT_TOKEN_REPO_A
+        sync: false
+      - key: SLACK_APP_TOKEN_REPO_A
+        sync: false
+      - key: SLACK_SIGNING_SECRET_REPO_A
+        sync: false
+
+      # ── REPO_B ───────────────────────────────────────────
+      - key: SLACK_BOT_TOKEN_REPO_B
+        sync: false
+      - key: SLACK_APP_TOKEN_REPO_B
+        sync: false
+      - key: SLACK_SIGNING_SECRET_REPO_B
+        sync: false
+
+      # ── REPO_C ───────────────────────────────────────────
+      - key: SLACK_BOT_TOKEN_REPO_C
+        sync: false
+      - key: SLACK_APP_TOKEN_REPO_C
+        sync: false
+      - key: SLACK_SIGNING_SECRET_REPO_C
+        sync: false
