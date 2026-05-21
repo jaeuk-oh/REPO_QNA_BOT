@@ -1,7 +1,9 @@
 import logging
+import os
 import signal
 import sys
 import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import config
 import scheduler
@@ -13,6 +15,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+class _HealthHandler(BaseHTTPRequestHandler):
+    """Render의 포트 스캔을 통과하기 위한 최소 헬스체크 엔드포인트."""
+
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+    def log_message(self, fmt, *args):  # 액세스 로그 억제
+        pass
+
+
+def _start_health_server() -> None:
+    port = int(os.getenv("PORT", "10000"))
+    server = HTTPServer(("0.0.0.0", port), _HealthHandler)
+    logger.info("Health check server listening on port %d", port)
+    server.serve_forever()
 
 def main() -> int:
     config.validate()
@@ -44,6 +63,9 @@ def main() -> int:
 
     # Start background reindex scheduler
     sched = scheduler.start_scheduler(repos)
+
+    # Render Web Service용 헬스체크 서버 (포트 스캔 통과)
+    threading.Thread(target=_start_health_server, daemon=True, name="health-server").start()
 
     stop = threading.Event()
 
