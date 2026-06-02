@@ -34,6 +34,10 @@ def _start_health_server() -> None:
     server.serve_forever()
 
 def main() -> int:
+    # ① 헬스체크 서버를 가장 먼저 시작 — Render가 포트 스캔을 하는 동안
+    #    initial_index(clone + 임베딩)가 블로킹되어 타임아웃으로 죽는 문제 방지
+    threading.Thread(target=_start_health_server, daemon=True, name="health-server").start()
+
     config.validate()
     config.ensure_dirs()
 
@@ -63,9 +67,6 @@ def main() -> int:
 
     # Start background reindex scheduler
     sched = scheduler.start_scheduler(repos)
-
-    # Render Web Service용 헬스체크 서버 (포트 스캔 통과)
-    threading.Thread(target=_start_health_server, daemon=True, name="health-server").start()
 
     stop = threading.Event()
 
