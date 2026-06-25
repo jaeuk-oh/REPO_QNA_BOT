@@ -64,11 +64,30 @@ def verify(goldset_path: Path, repo_root: Path) -> int:
     file_checks = symbol_checks = 0
     seen_ids: set[str] = set()
 
+    VALID_INTENT = {"code", "project", "chat"}
+    VALID_HOP = {"single", "multi", "none"}
+    VALID_DIFF = {"easy", "medium", "hard"}
+
     for lineno, rec in records:
         rid = rec.get("id", f"line{lineno}")
         if rid in seen_ids:
             failures.append(f"[{rid}] 중복 id")
         seen_ids.add(rid)
+
+        # 스키마: 필수 필드 + enum 값 검증
+        if rec.get("intent") not in VALID_INTENT:
+            failures.append(f"[{rid}] intent 누락/오류: {rec.get('intent')!r}")
+        if rec.get("hop") not in VALID_HOP:
+            failures.append(f"[{rid}] hop 누락/오류: {rec.get('hop')!r}")
+        if rec.get("difficulty") not in VALID_DIFF:
+            failures.append(f"[{rid}] difficulty 누락/오류: {rec.get('difficulty')!r}")
+        if not str(rec.get("question", "")).strip():
+            failures.append(f"[{rid}] question 비어있음")
+        # hop은 gold_files 개수와 일관돼야 함
+        n = len(rec.get("gold_files", []))
+        expected_hop = "none" if n == 0 else "single" if n == 1 else "multi"
+        if rec.get("hop") != expected_hop:
+            failures.append(f"[{rid}] hop={rec.get('hop')} 인데 gold_files {n}개 (기대: {expected_hop})")
 
         for rel in rec.get("gold_files", []):
             file_checks += 1
