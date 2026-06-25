@@ -85,3 +85,28 @@
 - **이유**: 둘의 목적이 다르다. 합성은 코드 단위 기능을 빠짐없이 덮는 정밀 격자, 현실은 실제 사용자
   표현·분포로 체감 성능을 측정. 분리하면 "코드커버리지 점수"와 "실사용 점수"를 따로 추적할 수 있다.
 - **기각**: 하나로 병합 → 개념 중복·목적 혼재로 두 신호가 섞임.
+
+### D14. 골드셋을 직무(persona)별 파일로 저장하고 all.jsonl로 합쳐 평가한다 (D13 갱신)
+- **결정**: 현실 50문항을 12개 직무 파일(backend/frontend/qa/onboarding/pm/cs/analytics/devops/
+  incident/performance/refactoring/navigation)로 분리, 각 레코드에 `persona` 태그. `build_goldset.py`가
+  이들을 `goldset/all.jsonl`로 합치고 평가는 통합본 기준으로 돈다. 합성 suite는 `goldset_synthetic/`로
+  옮겨 all.jsonl에서 제외(옵션 보존).
+- **이유**: 직무 태그가 있으면 평가 후 persona/난이도/intent/hop 어느 축으로든 점수를 쪼개 약점을 짚을 수
+  있다("incident 41% vs navigation 91%"). 직무별 추가/관리도 파일 단위라 쉽다.
+- **기각**: 영역(backend/frontend/docs) 3분할 → 직무 분해 불가. 단일 파일 → 추가·리뷰 단위가 거칠다.
+
+### D15. K=5, judge=gpt-4o, intent는 예측값으로 디스패치한다
+- **결정**: Recall@K·Hit@1의 K=5(=상위 5 chunk를 파일집합으로 환원, 봇 실제 컨텍스트와 동일).
+  Correctness judge는 `gpt-4o`(temp=0, structured output). 핸들러는 `classify_intent` **예측값**으로
+  디스패치하고, gold intent와 비교해 **IntentAcc**를 별도 지표로 기록.
+- **이유**: judge가 채점 대상(gpt-4o-mini)보다 강해야 self-preference 편향을 피한다. 예측 intent로 돌려야
+  라우팅 오류까지 포함한 진짜 엔드투엔드를 측정하고, intent 정확도도 공짜로 얻는다.
+- **기각**: gold intent로 디스패치 → 라우팅 버그를 못 본다. judge=gpt-4o-mini → 자기 답 후하게 봄.
+
+### D16. 검색 경로 정규화는 불필요하다 (코드로 확인)
+- **결정**: 별도 경로 매핑 레이어를 두지 않는다.
+- **이유**: `chunker.py:80`이 `relative_to(clone_dir).as_posix()`로 레포루트 기준 POSIX 경로를 저장하고
+  `retriever.py:43`이 그대로 노출한다 → gold_files 형식(`api/…`, `web/src/…`, `docs/…`)과 글자 그대로 일치.
+  러너는 `chunk.file_path`를 모아 중복제거만 하면 된다.
+- **한계 메모**: 평가용 클론이 동일한 최상위 레이아웃(api/·web/·docs/)을 유지한다는 전제. cloner가 레포
+  루트를 그대로 클론하므로 충족.
