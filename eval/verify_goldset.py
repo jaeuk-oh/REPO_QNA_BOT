@@ -59,7 +59,8 @@ def verify(goldset_path: Path, repo_root: Path) -> int:
                 print(f"  ✗ line {lineno}: JSON 파싱 실패 — {e}")
                 return 2
 
-    symbol_cache: dict[Path, set[str]] = {}
+    # path -> ("ast", {symbols}) for .py / ("text", raw_source) for others
+    symbol_cache: dict[Path, tuple[str, object]] = {}
     failures: list[str] = []
     file_checks = symbol_checks = 0
     seen_ids: set[str] = set()
@@ -97,22 +98,32 @@ def verify(goldset_path: Path, repo_root: Path) -> int:
                 continue
 
             if path not in symbol_cache:
-                try:
-                    symbol_cache[path] = collect_defined_symbols(
-                        path.read_text(encoding="utf-8")
-                    )
-                except SyntaxError as e:
-                    failures.append(f"[{rid}] {rel} 파싱 실패: {e}")
-                    symbol_cache[path] = set()
+                text = path.read_text(encoding="utf-8")
+                if path.suffix == ".py":
+                    # Python은 AST로 정의된 심볼을 정밀 추출
+                    try:
+                        symbol_cache[path] = ("ast", collect_defined_symbols(text))
+                    except SyntaxError as e:
+                        failures.append(f"[{rid}] {rel} 파싱 실패: {e}")
+                        symbol_cache[path] = ("ast", set())
+                else:
+                    # TS/TSX/md/sql 등은 AST가 없으므로 텍스트 존재로 검증 (약한 보증)
+                    symbol_cache[path] = ("text", text)
 
-        # 심볼은 같은 레코드의 gold_files 어딘가에 존재하면 통과
-        available: set[str] = set()
-        for rel in rec.get("gold_files", []):
-            available |= symbol_cache.get(repo_root / rel, set())
-
+        # 심볼은 같은 레코드의 gold_files 중 하나에 존재하면 통과
+        # - .py: AST 심볼 집합 멤버십 / 그 외: 원문 substring
         for sym in rec.get("gold_symbols", []):
             symbol_checks += 1
-            if sym not in available:
+            found = False
+            for rel in rec.get("gold_files", []):
+                kind, payload = symbol_cache.get(repo_root / rel, ("ast", set()))
+                if kind == "ast" and sym in payload:
+                    found = True
+                    break
+                if kind == "text" and sym in payload:
+                    found = True
+                    break
+            if not found:
                 files = ", ".join(rec.get("gold_files", [])) or "(없음)"
                 failures.append(f"[{rid}] 심볼 '{sym}' 미발견 (탐색: {files})")
 

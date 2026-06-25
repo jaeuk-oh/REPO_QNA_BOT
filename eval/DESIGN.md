@@ -64,14 +64,23 @@ hard에서만 크게 오를 수 있으므로, 평균만 보면 효과를 놓친�
 - 스키마: intent/hop/difficulty enum, hop과 gold_files 개수 일관성, id 중복, 빈 question
 현재: 49 레코드 · 파일 63 · 심볼 84 전부 통과.
 
+## 범위 (D11)
+api/ 백엔드 + web/src 프론트엔드 + docs(SETUP/troubleshooting/migrations) + README. 전체 레포.
+
 ## 컴포넌트
 | 파일 | 역할 | 상태 |
 |---|---|---|
-| `eval/goldset/api_backend.jsonl` | 골드셋 (자) | ✅ |
-| `eval/verify_goldset.py` | 골드셋 무결성/스키마 검증 | ✅ |
+| `eval/goldset/api_backend.jsonl` | 합성 suite — 코드사실 격자 (49) | ✅ |
+| `eval/goldset/realistic_backend.jsonl` | 현실 suite — 백엔드 (34) | ✅ |
+| `eval/goldset/realistic_frontend.jsonl` | 현실 suite — 프론트 (8) | ✅ |
+| `eval/goldset/realistic_docs.jsonl` | 현실 suite — docs/배포/인시던트 (8) | ✅ |
+| `eval/verify_goldset.py` | 무결성/스키마 검증 (py=AST, 그 외=텍스트) | ✅ |
 | `eval/run_eval.py` | 러너: 봇 호출 → Recall@K/Hit@1 산출 → 로그 저장 | ⬜ |
 | `eval/judge.py` | Correctness judge (temp=0, score+reason) | ⬜ |
 | `eval/results/` | 실험별 점수·로그 (v0, v1, …) | ⬜ |
+
+합성(api_backend)은 코드 단위를 빠짐없이 덮는 정밀 격자, 현실(realistic_*)은 실제 사용자 표현·분포로
+체감 성능 측정. 두 suite를 따로 추적 (D13).
 
 ## 개선 루프
 ```
