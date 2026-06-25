@@ -68,6 +68,9 @@ def verify(goldset_path: Path, repo_root: Path) -> int:
     VALID_INTENT = {"code", "project", "chat"}
     VALID_HOP = {"single", "multi", "none"}
     VALID_DIFF = {"easy", "medium", "hard"}
+    VALID_PERSONA = {"backend", "frontend", "qa", "onboarding", "pm", "cs",
+                     "analytics", "devops", "incident", "performance",
+                     "refactoring", "navigation"}
 
     for lineno, rec in records:
         rid = rec.get("id", f"line{lineno}")
@@ -82,6 +85,9 @@ def verify(goldset_path: Path, repo_root: Path) -> int:
             failures.append(f"[{rid}] hop 누락/오류: {rec.get('hop')!r}")
         if rec.get("difficulty") not in VALID_DIFF:
             failures.append(f"[{rid}] difficulty 누락/오류: {rec.get('difficulty')!r}")
+        # persona는 통합본(all.jsonl)에만 있으면 됨 — 합성 suite엔 없을 수 있어 있을 때만 검사
+        if "persona" in rec and rec["persona"] not in VALID_PERSONA:
+            failures.append(f"[{rid}] persona 오류: {rec.get('persona')!r}")
         if not str(rec.get("question", "")).strip():
             failures.append(f"[{rid}] question 비어있음")
         # hop은 gold_files 개수와 일관돼야 함
