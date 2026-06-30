@@ -1,6 +1,7 @@
 .env
 .venv/
 venv/
+.qna_venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -12,4 +13,8 @@ data/meta.json
 dist/
 build/
 .pytest_cache/
-plan.mdeval/__pycache__/
+plan.md
+
+# OMC tooling state (runtime) — keep design specs only
+.omc/*
+!.omc/specs/
