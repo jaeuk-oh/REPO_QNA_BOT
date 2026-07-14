@@ -54,3 +54,51 @@ python -m eval.run_eval --tag v0 --no-index       # 이미 인덱싱된 경우
 `v0` 측정 → 약한 축 확인(예: navigation Recall 낮음) → 레버 하나 변경
 (top_k/임베딩/청킹/프롬프트) → `v1` 재측정 → `summary.md` 축별 비교.
 `per_question.jsonl`(검색파일·점수·답변·judge_reason)이 회귀 원인 추적의 근거다.
+
+## v0 baseline 기록 (2026-07-14) — "자와 대상을 먼저 정렬하라"
+
+첫 v0 실행은 **점수가 아니라 방법론의 허점**을 먼저 드러냈다. 그 인과를 남긴다.
+
+### 무슨 일이 있었나
+처음 `run_eval --tag v0`를 `verify_goldset` 없이 돌렸더니 OVERALL Recall@5 0.26 / Correctness
+1.52로 처참했다. 그런데 analytics·cs·qa·refactoring persona의 Recall이 **통째로 0.00** —
+"임베딩이 약함"으로는 설명 안 되는 패턴이라 측정 자체를 의심했다.
+
+### 근본 원인 (검색으로 확인)
+1. **골드셋 ↔ 인덱스 버전 불일치**: 인덱싱된 클론이 초기 커밋 `5f74019`(4/19)에 고정돼 있었다.
+   골드셋이 참조하는 `api/services/auth.py`, `api/services/limits.py`,
+   `web/src/app/auth/callback/route.ts` 등이 **이 커밋엔 존재하지 않았다**(원격 최신 `127171e1`(6/24)엔 존재).
+   정답 파일이 인덱스에 없으면 검색이 아무리 좋아도 **Recall은 구조적으로 0** — 저 0.00들의 정체.
+2. **인덱스 오염**: 대상 레포에 커밋돼 있던 `.omc/`(autopilot spec 등)가 `SKIP_DIRS`에 없고 `.md`가
+   `CODE_EXTENSIONS`라 그대로 임베딩됐다. 정답 파일이 존재하는 문항조차 검색 상위를
+   `README.md`·`.omc/autopilot/spec.md`·`docs/SETUP.md`가 차지해 실제 코드 파일을 밀어냈다.
+
+→ 즉 저 점수는 "봇 성능"이 아니라 **(a) 봇 약점 + (b) 도달 불가능한 정답(측정 오류) + (c) 오염**이
+뒤섞인 값. 프레임워크 원칙 "자(尺)는 고정"의 전제는 **자가 대상과 정렬돼 있을 것**인데 그게 깨져 있었다.
+
+### 조치
+- `config.SKIP_DIRS`에 `.omc`(+`.vscode`/`.idea`/`.pytest_cache`) 추가 → 오염원 제외
+- REPO_A를 원격 최신 `127171e1`로 pull + **전체 재인덱싱**(337 chunks)
+- `verify_goldset` 재실행 → 파일 72 · 심볼 66 **전부 통과**(정렬 확인) → 그 다음에 v0 재측정
+- 무효 실행은 `results/v0_stale/`에 보존(인과 증거)
+
+### 정렬 전후 (동일 골드셋·동일 채점, 인덱스만 정렬)
+| 지표 | v0_stale(무효) | **v0(유효)** | Δ |
+|---|---|---|---|
+| Recall@5 | 0.26 | **0.50** | +0.24 |
+| AllFound@5 | 0.20 | **0.41** | +0.21 |
+| Hit@1 | 0.16 | **0.31** | +0.15 |
+| Correctness(0-5) | 1.52 | **1.96** | +0.44 |
+| IntentAcc | 0.44 | **0.44** | 0 |
+
+**읽는 법**: 검색계 지표가 거의 2배 → 원래 저점의 상당 부분이 봇이 아니라 **정렬 오류**였다는 증거.
+IntentAcc가 불변인 것도 인과적으로 맞다 — intent 분류는 인덱스와 무관하므로, 이건 이제 **진짜 약점**으로 확정된다.
+
+### 유효 baseline이 가리키는 실약점 (다음 실험 우선순위)
+- **IntentAcc 0.44** (라우팅이 절반 이상 오분류; hard 0.21, incident/performance/analytics 0.00) — 인덱스 무관, 순수 분류/프롬프트 문제.
+- **hop=multi AllFound@5 0.22** (멀티파일 검색 취약) — DECISIONS #1·#5의 구조적 한계 실측.
+- 유효값도 Correctness 1.96/5, Hit@1 0.31 — 봇 자체 개선 여지 실재(이제 깨끗하게 측정 가능).
+
+### 교훈 (프로세스에 반영)
+**`run_eval` 전에 `verify_goldset`을 반드시 통과시킨다.** 자와 대상이 정렬되지 않은 baseline은
+개선 실험의 신호를 정렬 오류와 뒤섞어 판단 불능으로 만든다. 정렬은 실험의 전제조건이다.
