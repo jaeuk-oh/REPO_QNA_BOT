@@ -30,6 +30,7 @@ CODE_EXTENSIONS: set[str] = {
 SKIP_DIRS: set[str] = {
     ".git", "node_modules", "venv", ".venv",
     "dist", "build", "__pycache__", ".next", "target",
+    ".omc", ".vscode", ".idea", ".pytest_cache",
 }
 
 
