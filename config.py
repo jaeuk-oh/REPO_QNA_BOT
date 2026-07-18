@@ -17,7 +17,7 @@ CHAT_MODEL: str = "gpt-4o-mini" #성능 별로면 gpt-5o-mini
 
 CHUNK_SIZE: int = 1000
 CHUNK_OVERLAP: int = 200
-TOP_K: int = 5
+TOP_K: int = 10  # E1: 5→10, multi-hop 답변 완성률↑ (eval v0→combo)
 
 REINDEX_INTERVAL_DAYS: int = 2
 

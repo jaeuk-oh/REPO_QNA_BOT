@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "tag": "e1_topk10",
+    "timestamp": "2026-07-15T08:55:34+00:00",
+    "repo": "REPO_A",
+    "judge_model": "gpt-4o",
+    "top_k": 10
+  },
+  "summary": {
+    "overall": {
+      "n": 50,
+      "recall@5": 0.602,
+      "all_found@5": 0.49,
+      "hit@1": 0.306,
+      "correctness": 2.78,
+      "intent_acc": 0.84
+    },
+    "by": {
+      "persona": {
+        "analytics": {
+          "n": 3,
+          "recall@5": 0.667,
+          "all_found@5": 0.333,
+          "hit@1": 0.0,
+          "correctness": 3.333,
+          "intent_acc": 1.0
+        },
+        "backend": {
+          "n": 6,
+          "recall@5": 0.667,
+          "all_found@5": 0.5,
+          "hit@1": 0.333,
+          "correctness": 2.333,
+          "intent_acc": 0.833
+        },
+        "cs": {
+          "n": 4,
+          "recall@5": 0.5,
+          "all_found@5": 0.25,
+          "hit@1": 0.5,
+          "correctness": 2.5,
+          "intent_acc": 0.5
+        },
+        "devops": {
+          "n": 3,
+          "recall@5": 0.833,
+          "all_found@5": 0.667,
+          "hit@1": 0.333,
+          "correctness": 4.333,
+          "intent_acc": 1.0
+        },
+        "frontend": {
+          "n": 4,
+          "recall@5": 0.5,
+          "all_found@5": 0.5,
+          "hit@1": 0.25,
+          "correctness": 2.75,
+          "intent_acc": 0.75
+        },
+        "incident": {
+          "n": 3,
+          "recall@5": 0.667,
+          "all_found@5": 0.333,
+          "hit@1": 0.333,
+          "correctness": 1.667,
+          "intent_acc": 0.667
+        },
+        "navigation": {
+          "n": 10,
+          "recall@5": 0.7,
+          "all_found@5": 0.7,
+          "hit@1": 0.3,
+          "correctness": 3.4,
+          "intent_acc": 1.0
+        },
+        "onboarding": {
+          "n": 4,
+          "recall@5": 0.875,
+          "all_found@5": 0.75,
+          "hit@1": 0.5,
+          "correctness": 4.25,
+          "intent_acc": 1.0
+        },
+        "performance": {
+          "n": 2,
+          "recall@5": 0.75,
+          "all_found@5": 0.5,
+          "hit@1": 0.5,
+          "correctness": 1,
+          "intent_acc": 0.5
+        },
+        "pm": {
+          "n": 4,
+          "recall@5": 0.5,
+          "all_found@5": 0.5,
+          "hit@1": 0.25,
+          "correctness": 1.75,
+          "intent_acc": 0.75
+        },
+        "qa": {
+          "n": 4,
+          "recall@5": 0.25,
+          "all_found@5": 0.25,
+          "hit@1": 0.25,
+          "correctness": 2.25,
+          "intent_acc": 1.0
+        },
+        "refactoring": {
+          "n": 3,
+          "recall@5": 0.0,
+          "all_found@5": 0.0,
+          "hit@1": 0.0,
+          "correctness": 2.333,
+          "intent_acc": 0.667
+        }
+      },
+      "intent": {
+        "code": {
+          "n": 37,
+          "recall@5": 0.622,
+          "all_found@5": 0.514,
+          "hit@1": 0.243,
+          "correctness": 2.757,
+          "intent_acc": 0.946
+        },
+        "project": {
+          "n": 13,
+          "recall@5": 0.542,
+          "all_found@5": 0.417,
+          "hit@1": 0.5,
+          "correctness": 2.846,
+          "intent_acc": 0.538
+        }
+      },
+      "difficulty": {
+        "easy": {
+          "n": 9,
+          "recall@5": 0.778,
+          "all_found@5": 0.778,
+          "hit@1": 0.333,
+          "correctness": 3.556,
+          "intent_acc": 1.0
+        },
+        "hard": {
+          "n": 14,
+          "recall@5": 0.462,
+          "all_found@5": 0.308,
+          "hit@1": 0.308,
+          "correctness": 2.357,
+          "intent_acc": 0.643
+        },
+        "medium": {
+          "n": 27,
+          "recall@5": 0.611,
+          "all_found@5": 0.481,
+          "hit@1": 0.296,
+          "correctness": 2.741,
+          "intent_acc": 0.889
+        }
+      },
+      "hop": {
+        "multi": {
+          "n": 23,
+          "recall@5": 0.5,
+          "all_found@5": 0.261,
+          "hit@1": 0.304,
+          "correctness": 2.739,
+          "intent_acc": 0.826
+        },
+        "none": {
+          "n": 1,
+          "recall@5": null,
+          "all_found@5": null,
+          "hit@1": null,
+          "correctness": 4,
+          "intent_acc": 1.0
+        },
+        "single": {
+          "n": 26,
+          "recall@5": 0.692,
+          "all_found@5": 0.692,
+          "hit@1": 0.308,
+          "correctness": 2.769,
+          "intent_acc": 0.846
+        }
+      }
+    }
+  }
+}

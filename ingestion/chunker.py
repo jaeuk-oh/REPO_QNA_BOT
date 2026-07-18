@@ -84,7 +84,9 @@ def chunk_file(repo_name: str, clone_dir: Path, file_path: Path) -> list[Chunk]:
     return [
         Chunk(
             id=f"{repo_name}::{rel_path}::{i}",
-            text=part,
+            # E3: 파일경로를 청크 앞에 붙여 임베딩 — 위치 토큰(api, services, auth)이
+            # 검색 벡터에 실리도록. file_path 메타데이터는 그대로(채점/표시용).
+            text=f"{rel_path}\n\n{part}",
             metadata={
                 "repo": repo_name,
                 "file_path": rel_path,
