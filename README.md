@@ -76,7 +76,7 @@ Claude Code·Cursor는 *엔지니어가 IDE 안에서 깊게 파고들 때* 강�
 │          └─ code    → RAG + 구조화 답변      │
 │                                              │
 │  2. 질문 임베딩 (text-embedding-3-small)     │
-│  3. ChromaDB 유사 청크 검색 (로컬, top_k=5) │
+│  3. ChromaDB 유사 청크 검색 (로컬, top_k=10)│
 │  4. 청크 + 질문 → GPT 답변 생성             │
 │     code → StructuredAnswer (Pydantic 스키마)│
 └─────────────────────────────────────────────┘
@@ -88,6 +88,7 @@ Claude Code·Cursor는 *엔지니어가 IDE 안에서 깊게 파고들 때* 강�
   GitHub URL
     → git clone/pull
     → 언어별 청크 분할 (RecursiveCharacterTextSplitter.from_language)
+    → 청크 앞에 파일경로 프리픽스 (위치 신호 → 검색 품질↑)
     → text-embedding-3-small
     → ChromaDB PersistentClient 저장
 ```
@@ -108,6 +109,36 @@ Claude Code·Cursor는 *엔지니어가 IDE 안에서 깊게 파고들 때* 강�
 | Docker | 배포 환경 | chromadb가 C++ 빌드 도구(gcc, g++) 필요 — Render 기본 Python 환경에 없어서 Dockerfile로 직접 설치 |
 
 상세 트레이드오프 → [DECISIONS.md](DECISIONS.md)
+
+---
+
+## 📊 평가 & 개선
+
+> 이 프로젝트는 실사용 데이터가 없다(위 "문제 정의" 참조). 그래서 답변 품질을 **감이 아니라 숫자로** 재고 올렸다. 골드셋으로 검색·생성 품질을 측정하고, 레버를 하나씩 바꿔 개선한다.
+
+**어떻게 재나** — 대상 레포 골드셋 50문항(직무·난이도·hop 태그)을 봇 파이프라인에 헤드리스로 통과시켜 채점한다. **검색과 생성을 분리 측정**해 "무엇을 바꿨더니 무엇이 좋아졌나"를 인과적으로 말할 수 있게 한다.
+
+| 지표 | 뜻 |
+|---|---|
+| Recall@K / Hit@1 | 정답 파일을 검색했나 / 1순위로 왔나 (검색) |
+| Correctness (0-5) | 답이 사실과 맞나 — gpt-4o LLM-as-judge (생성) |
+| IntentAcc | 질문을 맞는 처리방식(code/project/chat)으로 보냈나 (라우팅) |
+
+**개선 성적표** (v0 정렬 baseline → 현재)
+
+| 지표 | v0 | 현재 | |
+|---|---|---|---|
+| 답 정확도 (Correctness 0-5) | 1.96 | **2.74** | +0.78 |
+| 라우팅 정확도 (IntentAcc) | 44% | **84%** | +40%p |
+| 검색 1등 적중 (Hit@1) | 31% | **37%** | +6%p |
+
+**방법** — 고정 대조군 대비 레버 하나씩(OFAT) 측정 후, 이긴 레버만 합쳐 재검증.
+- ✅ 채택: 의도분류 프롬프트 보강 · `top_k` 5→10 · 파일경로 임베딩
+- ❌ 기각(음성 결과도 기록): 청크 크기 변경 · BM25 하이브리드
+
+**틀린 baseline을 신뢰하지 않기** — 첫 측정은 골드셋이 인덱싱된 레포 버전과 어긋나(정답 파일이 인덱스에 부재) 무효였다. `verify_goldset`으로 자↔인덱스 정렬을 강제한 뒤에야 유효 baseline을 얻었다.
+
+상세 지표·설계·실험 로그 → [eval/README.md](eval/README.md) · [eval/EXPERIMENTS.md](eval/EXPERIMENTS.md)
 
 ---
 
@@ -162,8 +193,14 @@ python main.py
 │   └── embedder.py      # 임베딩 + ChromaDB upsert/delete
 ├── slackbot/
 │   └── handler.py       # Slack 이벤트 핸들링, 백그라운드 스레드
-└── scheduler/
-    └── reindexer.py     # 증분 재인덱싱 + APScheduler
+├── scheduler/
+│   └── reindexer.py     # 증분 재인덱싱 + APScheduler
+├── eval/                # RAG 평가 프레임워크
+│   ├── run_eval.py      #   검색→답변→judge→집계 러너
+│   ├── judge.py         #   gpt-4o LLM-as-judge (Correctness)
+│   ├── goldset/         #   직무별 골드셋 50문항 (+ all.jsonl)
+│   └── EXPERIMENTS.md   #   개선 실험 계획·판정 로그
+└── data/                # 런타임(gitignore): 클론·ChromaDB·meta.json
 ```
 
 ---
@@ -181,7 +218,8 @@ python main.py
 | 멀티턴 대화 (스레드 맥락 유지) | 🔧 미구현 | 현재 매 멘션이 독립 처리됨 |
 | Private 레포 지원 | 🔧 미구현 | GitHub PAT 인증 추가 필요 |
 | 재인덱싱 실패 알림 | 🔧 미구현 | 현재 로그에만 기록 |
-| 단위 테스트 | 🔧 미구현 | classify_intent / retrieve / chunk_repo 우선 |
+| RAG 품질 평가 & 개선 루프 | ✅ 완료 | 골드셋 50문항 · Correct 1.96→2.74 ([eval/](eval/)) |
+| 단위 테스트 | 🔧 미구현 | eval이 통합 검증 대신 커버, 순수 단위테스트는 미도입 |
 | 전체 아키텍처 흐름 질문 | ⚠️ 구조적 한계 | 청크 분할 특성상 함수 간 호출 관계 파악 어려움 |
 
 > **설계 의도**: "이 함수 뭐 해?", "이 변수 어디서 쓰여?" 같은 **국소적 질문**에 최적화되어 있습니다.
